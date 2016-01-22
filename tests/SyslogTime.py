@@ -1,12 +1,12 @@
 #!/usr/bin/python3
-# vim: noexpandtab tabstop=4 shiftwidth=4 fileformat=unix
 # -*- coding: utf-8 -*-
+# vim: noexpandtab tabstop=4 shiftwidth=4 fileformat=unix
 
 import sys, datetime, time
 import SyslogClient
 
 def print_help():
-	print("%s : {tcp|udp}://<SERVER>:<PORT> [rfc5434|rfc3164]" % (sys.argv[0]))
+	print("%s : {tcp|udp}://<SERVER>:<PORT> [rfc5424|rfc3164]" % (sys.argv[0]))
 	sys.exit(0)
 
 if __name__ == "__main__":
@@ -26,8 +26,8 @@ if __name__ == "__main__":
 		port = int(args2[1])
 
 		if len(sys.argv) == 3:
-			rfc = sys.argv[2]
-			if rfc.upper() != "RFC3164" and rfc != "RFC5424":
+			rfc = sys.argv[2].upper()
+			if rfc != "RFC3164" and rfc != "RFC5424":
 				print_help()
 		else:
 			rfc = "RFC3164"
@@ -41,7 +41,7 @@ if __name__ == "__main__":
 		client = SyslogClient.SyslogClientRFC3164(host, port, proto=proto)
 
 	while True:
-		client.log(u"the time is %s" % (datetime.datetime.now()), facility=SyslogClient.FAC_SYSLOG, severity=SyslogClient.SEV_DEBUG)
+		client.log("the time is %s" % (datetime.datetime.now()), facility=SyslogClient.FAC_SYSLOG, severity=SyslogClient.SEV_DEBUG, program="time", pid=1)
 		try:
 			time.sleep(1)
 		except KeyboardInterrupt as e:

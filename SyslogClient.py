@@ -1,6 +1,6 @@
 #!/usr/bin/python3
-# vim: noexpandtab tabstop=4 shiftwidth=4 fileformat=unix
 # -*- coding: utf-8 -*-
+# vim: noexpandtab tabstop=4 shiftwidth=4 fileformat=unix
 
 # Syslog client (RFC3164, RFC5424) for Python
 #
@@ -83,11 +83,13 @@ def datetime2rfc3339(dt):
 	return "%s%s" % (dt.strftime("%Y-%m-%dT%H:%M:%S.%f"), tz)
 
 class SyslogClient:
-	def __init__(self, server, port, proto='udp', forceipv4=False, clientname=None):
+	def __init__(self, server, port, proto='udp', forceipv4=False, clientname=None, rfc=None, maxMessageLength=1024):
+		self.socket = None
 		self.server = server
 		self.port = port
 		self.proto = socket.SOCK_DGRAM
-		self.socket = None
+		self.rfc = rfc
+		self.maxMessageLength = maxMessageLength
 		self.forceipv4 = forceipv4
 
 		if proto != None:
@@ -144,15 +146,26 @@ class SyslogClient:
 	def send(self, messagedata):
 		if self.socket != None or self.connect():
 			try:
-				self.socket.send(messagedata)
-			except BrokenPipeError as e:
+				if self.maxMessageLength != None:
+					self.socket.send(messagedata[:self.maxMessageLength])
+				else:
+					self.socket.send(messagedata)
+			except IOError as e:
 				self.close()
 
 class SyslogClientRFC5424(SyslogClient):
 	def __init__(self, server, port, proto='udp', forceipv4=False, clientname=None):
-		SyslogClient.__init__(self, server, port, proto, forceipv4, clientname)
+		SyslogClient.__init__(self,
+			server=server,
+			port=port,
+			proto=proto,
+			forceipv4=forceipv4,
+			clientname=clientname,
+			rfc='5424',
+			maxMessageLength=None,
+		)
 
-	def log(self, message, facility=None, severity=None, timestamp=None, hostname=None, version=1, appname=None, procid=None, msgid=None):
+	def log(self, message, facility=None, severity=None, timestamp=None, hostname=None, version=1, program=None, pid=None, msgid=None):
 
 		if facility == None:
 			facility = FAC_USER
@@ -177,15 +190,15 @@ class SyslogClientRFC5424(SyslogClient):
 		else:
 			hostname_s = hostname
 
-		if appname == None:
+		if program == None:
 			appname_s = "-" 
 		else:
-			appname_s = appname
+			appname_s = program
 
-		if procid == None:
+		if pid == None:
 			procid_s = "-"
 		else:
-			procid_s = procid
+			procid_s = pid
 
 		if msgid == None:
 			msgid_s = "-"
@@ -207,9 +220,17 @@ class SyslogClientRFC5424(SyslogClient):
 
 class SyslogClientRFC3164(SyslogClient):
 	def __init__(self, server, port, proto='udp', forceipv4=False, clientname=None):
-		SyslogClient.__init__(self, server, port, proto, forceipv4, clientname)
+		SyslogClient.__init__(self,
+			server=server,
+			port=port,
+			proto=proto,
+			forceipv4=forceipv4,
+			clientname=clientname,
+			rfc='3164',
+			maxMessageLength=1024,
+		)
 
-	def log(self, message, facility=None, severity=None, timestamp=None, hostname=None):
+	def log(self, message, facility=None, severity=None, timestamp=None, hostname=None, program="SyslogClient", pid=None):
 		if facility == None:
 			facility = FAC_USER
 
@@ -233,10 +254,20 @@ class SyslogClientRFC3164(SyslogClient):
 		else:
 			hostname_s = hostname
 
-		d = "<%i>%s %s %s\n" % (
+		tag_s = ""
+		if tag == None:
+			tag_s += "SyslogClient"
+		else:
+			tag_s += program
+
+		if pid != None:
+			tag_s += "[%i]" % (pid)
+
+		d = "<%i>%s %s %s: %s\n" % (
 			pri,
 			timestamp_s,
 			hostname_s,
+			tag_s,
 			message
 		)
 
