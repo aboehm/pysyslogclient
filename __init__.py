@@ -30,46 +30,14 @@
 #
 
 import sys, socket, datetime
-import tzlocal
-
-FAC_KERNEL = 0
-FAC_USER = 1
-FAC_MAIL = 2
-FAC_SYSTEM = 3
-FAC_SECURITY = 4
-FAC_SYSLOG = 5
-FAC_PRINTER = 6
-FAC_NETWORK = 7
-FAC_UUCP = 8
-FAC_CLOCK = 9
-FAC_AUTH = 10
-FAC_FTP = 11
-FAC_NTP = 12
-FAC_LOG_AUDIT = 13
-FAC_LOG_ALERT = 14
-FAC_CLOCK2 = 15
-FAC_LOCAL0 = 16
-FAC_LOCAL1 = 17
-FAC_LOCAL2 = 18
-FAC_LOCAL3 = 19
-FAC_LOCAL4 = 20
-FAC_LOCAL5 = 21
-FAC_LOCAL6 = 22
-FAC_LOCAL7 = 23
-
-SEV_EMERGENCY = 0
-SEV_ALERT = 1
-SEV_CRITICAL = 2
-SEV_ERROR = 3
-SEV_WARNING = 4
-SEV_NOTICE = 5
-SEV_INFO = 6
-SEV_DEBUG = 7
+__all__ = ["SyslogClient", "SyslogClientRFC3164", "SyslogClientRFC5424"]
 
 def datetime2rfc3339(dt):
-	diff_sec = dt.tzinfo._utcoffset.seconds 
-	diff_min = abs((diff_sec / 60) % 60)
-	diff_hr = (diff_sec / 3600) % 60
+	# calculating timezone
+	d1 = datetime.datetime.now()
+	d2 = datetime.datetime.utcnow()
+	diff_min = ((d1-d2).seconds/60) % 60
+	diff_hr = (d1-d2).seconds/60/60
 	tz = ""
 
 	if diff_hr == 0:
@@ -82,7 +50,41 @@ def datetime2rfc3339(dt):
 
 	return "%s%s" % (dt.strftime("%Y-%m-%dT%H:%M:%S.%f"), tz)
 
-class SyslogClient:
+class SyslogClient(object):
+	FAC_KERNEL = 0
+	FAC_USER = 1
+	FAC_MAIL = 2
+	FAC_SYSTEM = 3
+	FAC_SECURITY = 4
+	FAC_SYSLOG = 5
+	FAC_PRINTER = 6
+	FAC_NETWORK = 7
+	FAC_UUCP = 8
+	FAC_CLOCK = 9
+	FAC_AUTH = 10
+	FAC_FTP = 11
+	FAC_NTP = 12
+	FAC_LOG_AUDIT = 13
+	FAC_LOG_ALERT = 14
+	FAC_CLOCK2 = 15
+	FAC_LOCAL0 = 16
+	FAC_LOCAL1 = 17
+	FAC_LOCAL2 = 18
+	FAC_LOCAL3 = 19
+	FAC_LOCAL4 = 20
+	FAC_LOCAL5 = 21
+	FAC_LOCAL6 = 22
+	FAC_LOCAL7 = 23
+
+	SEV_EMERGENCY = 0
+	SEV_ALERT = 1
+	SEV_CRITICAL = 2
+	SEV_ERROR = 3
+	SEV_WARNING = 4
+	SEV_NOTICE = 5
+	SEV_INFO = 6
+	SEV_DEBUG = 7
+
 	def __init__(self, server, port, proto='udp', forceipv4=False, clientname=None, rfc=None, maxMessageLength=1024):
 		self.socket = None
 		self.server = server
@@ -166,23 +168,19 @@ class SyslogClientRFC5424(SyslogClient):
 		)
 
 	def log(self, message, facility=None, severity=None, timestamp=None, hostname=None, version=1, program=None, pid=None, msgid=None):
-
 		if facility == None:
-			facility = FAC_USER
+			facility = SyslogClient.FAC_USER
 
 		if severity == None:
-			severity = SEV_INFO
+			severity = SyslogClient.SEV_INFO
 
 		pri = facility*8 + severity
 
 		if timestamp == None:
-			t = datetime.datetime.now(tzlocal.get_localzone())
+			t = datetime.datetime.now()
 		else:
 			t = timestamp
 
-		if t.tzinfo == None:
-			t = t.replace(tzinfo=tzlocal.get_localzone())
-	
 		timestamp_s = datetime2rfc3339(t)
 
 		if hostname == None:
@@ -232,20 +230,17 @@ class SyslogClientRFC3164(SyslogClient):
 
 	def log(self, message, facility=None, severity=None, timestamp=None, hostname=None, program="SyslogClient", pid=None):
 		if facility == None:
-			facility = FAC_USER
+			facility = SyslogClient.FAC_USER
 
 		if severity == None:
-			severity = SEV_INFO
+			severity = SyslogClient.SEV_INFO
 
 		pri = facility*8 + severity
 
 		if timestamp == None:
-			t = datetime.datetime.now(tzlocal.get_localzone())
+			t = datetime.datetime.now()
 		else:
 			t = timestamp
-
-		if t.tzinfo == None:
-			t = t.replace(tzinfo=tzlocal.get_localzone())
 	
 		timestamp_s = t.strftime("%b %d %H:%M:%S")
 
@@ -255,7 +250,7 @@ class SyslogClientRFC3164(SyslogClient):
 			hostname_s = hostname
 
 		tag_s = ""
-		if tag == None:
+		if program == None:
 			tag_s += "SyslogClient"
 		else:
 			tag_s += program
@@ -272,5 +267,3 @@ class SyslogClientRFC3164(SyslogClient):
 		)
 
 		self.send(d.encode('ASCII', 'ignore'))
-
-
