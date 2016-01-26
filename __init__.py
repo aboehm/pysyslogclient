@@ -36,7 +36,6 @@ def datetime2rfc3339(dt):
 	# calculating timezone
 	d1 = datetime.datetime.now()
 	d2 = datetime.datetime.utcnow()
-	diff_min = ((d1-d2).seconds/60) % 60
 	diff_hr = (d1-d2).seconds/60/60
 	tz = ""
 
@@ -46,7 +45,7 @@ def datetime2rfc3339(dt):
 		if diff_hr > 0:
 			tz = "+%s" % (tz) 
 	
-		tz = "%s%.2d%.2d" % (tz, diff_hr, diff_min)
+		tz = "%s%.2d%.2d" % (tz, diff_hr, 0)
 
 	return "%s%s" % (dt.strftime("%Y-%m-%dT%H:%M:%S.%f"), tz)
 
