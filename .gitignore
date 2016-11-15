@@ -59,4 +59,5 @@ docs/_build/
 target/
 
 # some vim definitions
-.*.swp
+*.swp
+*.swo

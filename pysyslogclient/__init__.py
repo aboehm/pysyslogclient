@@ -1,89 +1,129 @@
-#!/usr/bin/python3
 # -*- coding: utf-8 -*-
-# vim: noexpandtab tabstop=4 shiftwidth=4 fileformat=unix
 
-# Syslog client (RFC3164, RFC5424) for Python
-#
-# Copyright (c) 2016, Alexander Böhm
-# All rights reserved.
-# 
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are met:
-# 
-# * Redistributions of source code must retain the above copyright notice, this
-#   list of conditions and the following disclaimer.
-# 
-# * Redistributions in binary form must reproduce the above copyright notice,
-# this list of conditions and the following disclaimer in the documentation
-#   and/or other materials provided with the distribution.
-# 
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-# 	  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#
+"""
+pysyslogclient
+--------------
 
-import sys, socket, datetime
-__all__ = ["SyslogClient", "SyslogClientRFC3164", "SyslogClientRFC5424"]
+Syslog client library for Python 2.7 / 3.x (UNIX/Windows) following
 
-def datetime2rfc3339(dt):
-	# calculating timezone
-	d1 = datetime.datetime.now()
-	d2 = datetime.datetime.utcnow()
-	diff_hr = (d1-d2).seconds/60/60
-	tz = ""
+* RFC3164 (https://www.ietf.org/rfc/rfc3164.txt)
+* RFC5424 (https://www.ietf.org/rfc/rfc5424.txt)
 
-	if diff_hr == 0:
-		tz = "Z"
+TCP and UDP as transport is possible. If TCP is used, on every log message,
+that is send to the specified server, and a connection error occured, the
+message will be dismissed and reconnect will be tried for the next message.
+
+Usage
+-----
+
+A small CLI client is implemented in cli.py. To call it, run
+
+	python -m pysyslogclient.cli
+
+To setup the client for RFC 5424 over TCP to send to localhost on port 514:
+
+	>>> from pysyslogclient import *
+	>>> client = SyslogClientRFC5424("localhost", 514, proto="TCP")
+
+or for RFC 3164:
+
+	>>> client = SyslogClientRFC3164("localhost", 514, proto="TCP")
+
+Log the message "Hello syslog server" with standard severity **INFO** as facility
+**USER**. As program name **SyslogClient** the PID of the called python interpreter
+is used.
+
+	>>> client.log("Hello syslog server")
+
+To specify more options, call log with more arguments. For example to log a
+the message as program **Logger** with PID **1** as facility **SYSTEM** with severity
+**EMERGENCY**, call log the following way:
+
+	>>> client.log("Hello syslog server", facility=FAC_SYSTEM, severity=SEV_EMERGENCY, program="Logger", pid=1)
+
+To disconnect the client, call
+
+	>>> client.close()
+
+Author
+------
+
+* Alexander Böhm (alxndr.boehm@gmail.com)
+
+
+License
+-------
+
+BSD 2-Clause
+
+Repository
+----------
+
+* https://github.com/aboehm/pysyslogclient
+
+"""
+
+version = "0.1.0"
+
+import socket, sys
+from datetime import datetime
+
+def datetime2rfc3339(dt, is_utc=False):
+	if is_utc == False:
+		# calculating timezone
+		d1 = datetime.now()
+		d2 = datetime.utcnow()
+		diff_hr = (d1-d2).seconds/60/60
+		tz = ""
+
+		if diff_hr == 0:
+			tz = "Z"
+		else:
+			if diff_hr > 0:
+				tz = "+%s" % (tz) 
+		
+			tz = "%s%.2d%.2d" % (tz, diff_hr, 0)
+
+		return "%s%s" % (dt.strftime("%Y-%m-%dT%H:%M:%S.%f"), tz)
+
 	else:
-		if diff_hr > 0:
-			tz = "+%s" % (tz) 
-	
-		tz = "%s%.2d%.2d" % (tz, diff_hr, 0)
+		return dt.isoformat()+'Z'
 
-	return "%s%s" % (dt.strftime("%Y-%m-%dT%H:%M:%S.%f"), tz)
+FAC_KERNEL = 0
+FAC_USER = 1
+FAC_MAIL = 2
+FAC_SYSTEM = 3
+FAC_SECURITY = 4
+FAC_SYSLOG = 5
+FAC_PRINTER = 6
+FAC_NETWORK = 7
+FAC_UUCP = 8
+FAC_CLOCK = 9
+FAC_AUTH = 10
+FAC_FTP = 11
+FAC_NTP = 12
+FAC_LOG_AUDIT = 13
+FAC_LOG_ALERT = 14
+FAC_CLOCK2 = 15
+FAC_LOCAL0 = 16
+FAC_LOCAL1 = 17
+FAC_LOCAL2 = 18
+FAC_LOCAL3 = 19
+FAC_LOCAL4 = 20
+FAC_LOCAL5 = 21
+FAC_LOCAL6 = 22
+FAC_LOCAL7 = 23
+
+SEV_EMERGENCY = 0
+SEV_ALERT = 1
+SEV_CRITICAL = 2
+SEV_ERROR = 3
+SEV_WARNING = 4
+SEV_NOTICE = 5
+SEV_INFO = 6
+SEV_DEBUG = 7
 
 class SyslogClient(object):
-	FAC_KERNEL = 0
-	FAC_USER = 1
-	FAC_MAIL = 2
-	FAC_SYSTEM = 3
-	FAC_SECURITY = 4
-	FAC_SYSLOG = 5
-	FAC_PRINTER = 6
-	FAC_NETWORK = 7
-	FAC_UUCP = 8
-	FAC_CLOCK = 9
-	FAC_AUTH = 10
-	FAC_FTP = 11
-	FAC_NTP = 12
-	FAC_LOG_AUDIT = 13
-	FAC_LOG_ALERT = 14
-	FAC_CLOCK2 = 15
-	FAC_LOCAL0 = 16
-	FAC_LOCAL1 = 17
-	FAC_LOCAL2 = 18
-	FAC_LOCAL3 = 19
-	FAC_LOCAL4 = 20
-	FAC_LOCAL5 = 21
-	FAC_LOCAL6 = 22
-	FAC_LOCAL7 = 23
-
-	SEV_EMERGENCY = 0
-	SEV_ALERT = 1
-	SEV_CRITICAL = 2
-	SEV_ERROR = 3
-	SEV_WARNING = 4
-	SEV_NOTICE = 5
-	SEV_INFO = 6
-	SEV_DEBUG = 7
-
 	def __init__(self, server, port, proto='udp', forceipv4=False, clientname=None, rfc=None, maxMessageLength=1024):
 		self.socket = None
 		self.server = server
@@ -125,7 +165,8 @@ class SyslogClient(object):
 						self.socket = None
 					continue
 
-				except ConnectionRefusedError as e:
+				# ensure python 2.x compatibility
+				except socket.error as e:
 					if self.socket != None:
 						self.socket.close()
 						self.socket = None
@@ -168,19 +209,17 @@ class SyslogClientRFC5424(SyslogClient):
 
 	def log(self, message, facility=None, severity=None, timestamp=None, hostname=None, version=1, program=None, pid=None, msgid=None):
 		if facility == None:
-			facility = SyslogClient.FAC_USER
+			facility = FAC_USER
 
 		if severity == None:
-			severity = SyslogClient.SEV_INFO
+			severity = SEV_INFO
 
 		pri = facility*8 + severity
 
 		if timestamp == None:
-			t = datetime.datetime.now()
+			timestamp_s = datetime2rfc3339(datetime.utcnow(), is_utc=True)
 		else:
-			t = timestamp
-
-		timestamp_s = datetime2rfc3339(t)
+			timestamp_s = datetime2rfc3339(timestamp, is_utc=False)
 
 		if hostname == None:
 			hostname_s = self.clientname 
@@ -229,15 +268,15 @@ class SyslogClientRFC3164(SyslogClient):
 
 	def log(self, message, facility=None, severity=None, timestamp=None, hostname=None, program="SyslogClient", pid=None):
 		if facility == None:
-			facility = SyslogClient.FAC_USER
+			facility = FAC_USER
 
 		if severity == None:
-			severity = SyslogClient.SEV_INFO
+			severity = SEV_INFO
 
 		pri = facility*8 + severity
 
 		if timestamp == None:
-			t = datetime.datetime.now()
+			t = datetime.now()
 		else:
 			t = timestamp
 	
@@ -266,3 +305,9 @@ class SyslogClientRFC3164(SyslogClient):
 		)
 
 		self.send(d.encode('ASCII', 'ignore'))
+
+if __name__ == '__main__':
+	import doctest
+	doctest.testmod()
+
+# vim: ft=python tabstop=2 shiftwidth=2 noexpandtab :
