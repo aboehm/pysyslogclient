@@ -1,6 +1,6 @@
 # pysyslogclient
 
-Syslog client for python (RFC3164/5424) for UNIX and Windows
+Syslog client for Python (RFC 3164/5424) for UNIX and Windows
 
 ## Description
 
@@ -20,23 +20,23 @@ a reconnect will be tried for the next message.
 A small CLI client is implemented in *client.py*. To call it, run
 
 ```
-python -m SyslogClient.client
+python -m pysyslogclient.cli
 ```
 
 ### Startup client 
 
-To setup the client for RFC5424 over TCP to send to SERVER:PORT:
+To setup the client for RFC 5424 over TCP to send to SERVER:PORT:
 
 ```
-import SyslogClient
-client = SyslogClient.SyslogClientRFC5424(SERVER, PORT, proto="TCP")
+import pysyslogclient
+client = pysyslogclient.SyslogClientRFC5424(SERVER, PORT, proto="TCP")
 ```
 
 or for RFC3164:
 
 ```
 import SyslogClient
-client = SyslogClient.SyslogClientRFC3164(SERVER, PORT, proto="TCP")
+client = pysyslogclient.SyslogClientRFC3164(SERVER, PORT, proto="TCP")
 ```
 
 ### Log a messsage
@@ -56,8 +56,8 @@ the message as program *Logger* with PID *1* as facility *SYSTEM* with severity
 
 ```
 client.log("Hello syslog server",
-	facility=SyslogClient.FAC_SYSTEM,
-	severity=SyslogClient.SEV_EMERGENCY,
+	facility=pysyslogclient.FAC_SYSTEM,
+	severity=pysyslogclient.SEV_EMERGENCY,
 	program="Logger",
 	pid=1)
 ```
