@@ -1,67 +1,28 @@
 # -*- coding: utf-8 -*-
 
-"""
-pysyslogclient
---------------
-
-Syslog client library for Python 3 (UNIX/Linux/Windows) following
-
-* RFC3164 (https://www.ietf.org/rfc/rfc3164.txt)
-* RFC5424 (https://www.ietf.org/rfc/rfc5424.txt)
-
-TCP and UDP as transport is possible. If TCP is used, on every log message,
-that is send to the specified server, and a connection error occured, the
-message will be dismissed and reconnect will be tried for the next message.
-
-Usage
------
-
-A small CLI client is implemented in cli.py. To call it, run
-
-	python -m pysyslogclient.cli
-
-To setup the client for RFC 5424 over TCP to send to localhost on port 514:
-
-	>>> from pysyslogclient import *
-	>>> client = SyslogClientRFC5424("localhost", 514, proto="TCP")
-
-or for RFC 3164:
-
-	>>> client = SyslogClientRFC3164("localhost", 514, proto="TCP")
-
-Log the message "Hello syslog server" with standard severity **INFO** as facility
-**USER**. As program name **SyslogClient** the PID of the called python interpreter
-is used.
-
-	>>> client.log("Hello syslog server")
-
-To specify more options, call log with more arguments. For example to log a
-the message as program **Logger** with PID **1** as facility **SYSTEM** with severity
-**EMERGENCY**, call log the following way:
-
-	>>> client.log("Hello syslog server", facility=FAC_SYSTEM, severity=SEV_EMERGENCY, program="Logger", pid=1)
-
-To disconnect the client, call
-
-	>>> client.close()
-
-Author
-------
-
-* Alexander Böhm (alxndr.boehm@gmail.com)
-
-
-License
--------
-
-BSD 2-Clause
-
-Repository
-----------
-
-* https://github.com/aboehm/pysyslogclient
-
-"""
+# Copyright (c) 2016, Alexander Böhm
+# All rights reserved.
+# 
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+# 
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+# 
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+# 
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 version = "0.1.1"
 
