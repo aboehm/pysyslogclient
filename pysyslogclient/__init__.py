@@ -4,7 +4,7 @@
 pysyslogclient
 --------------
 
-Syslog client library for Python 2.7 / 3.x (UNIX/Windows) following
+Syslog client library for Python 3 (UNIX/Linux/Windows) following
 
 * RFC3164 (https://www.ietf.org/rfc/rfc3164.txt)
 * RFC5424 (https://www.ietf.org/rfc/rfc5424.txt)
@@ -63,7 +63,7 @@ Repository
 
 """
 
-version = "0.1.0"
+version = "0.1.1"
 
 import socket, sys
 from datetime import datetime
@@ -124,7 +124,11 @@ SEV_INFO = 6
 SEV_DEBUG = 7
 
 class SyslogClient(object):
-	def __init__(self, server, port, proto='udp', forceipv4=False, clientname=None, rfc=None, maxMessageLength=1024):
+	"""
+	>>> client = SyslogClient("localhost", 10514)
+	>>> client.log("test")
+	"""
+	def __init__(self, server:str, port:int, proto:str='udp', forceipv4:bool=False, clientname:str=None, rfc:str=None, maxMessageLength:int=1024) -> None:
 		self.socket = None
 		self.server = server
 		self.port = port
@@ -144,7 +148,7 @@ class SyslogClient(object):
 			if self.clientname == None:
 				self.clientname = socket.gethostname()
 
-	def connect(self):
+	def connect(self) -> bool:
 		if self.socket == None:
 			r = socket.getaddrinfo(self.server, self.port, socket.AF_UNSPEC, self.proto) 
 			if r == None:
@@ -177,26 +181,32 @@ class SyslogClient(object):
 		else:
 			return True
 
-	def close(self):
+	def close(self) -> None:
 		if self.socket != None:
 			self.socket.close()
 			self.socket = None
 
-	def log(self, message, timestamp=None, hostname=None, facility=None, severity=None):
+	def log(self, message:str, timestamp:datetime=None, hostname:str=None, facility:int=None, severity:int=None) -> None:
 		pass
 
-	def send(self, messagedata):
+	def send(self, messagedata:str) -> None:
 		if self.socket != None or self.connect():
 			try:
 				if self.maxMessageLength != None:
-					self.socket.send(messagedata[:self.maxMessageLength])
+					self.socket.sendall(messagedata[:self.maxMessageLength])
 				else:
-					self.socket.send(messagedata)
+					self.socket.sendall(messagedata)
 			except IOError as e:
 				self.close()
 
 class SyslogClientRFC5424(SyslogClient):
-	def __init__(self, server, port, proto='udp', forceipv4=False, clientname=None):
+	"""
+	>>> client = SyslogClientRFC5424("localhost", 10514, proto='udp')
+	>>> client.log("test")
+	>>> client = SyslogClientRFC5424("localhost", 10514, proto='tcp')
+	>>> client.log("test")
+	"""
+	def __init__(self, server:str, port:int, proto:str='udp', forceipv4:bool=False, clientname:str=None) -> None:
 		SyslogClient.__init__(self,
 			server=server,
 			port=port,
@@ -207,7 +217,7 @@ class SyslogClientRFC5424(SyslogClient):
 			maxMessageLength=None,
 		)
 
-	def log(self, message, facility=None, severity=None, timestamp=None, hostname=None, version=1, program=None, pid=None, msgid=None):
+	def log(self, message:str, facility:int=None, severity:int=None, timestamp:datetime=None, hostname:str=None, version:int=1, program:str=None, pid:int=None, msgid:int=None):
 		if facility == None:
 			facility = FAC_USER
 
@@ -255,7 +265,13 @@ class SyslogClientRFC5424(SyslogClient):
 		self.send(d.encode('utf-8'))
 
 class SyslogClientRFC3164(SyslogClient):
-	def __init__(self, server, port, proto='udp', forceipv4=False, clientname=None):
+	"""
+	>>> client = SyslogClientRFC3164("localhost", 10514, proto='udp')
+	>>> client.log("test")
+	>>> client = SyslogClientRFC3164("localhost", 10514, proto='tcp')
+	>>> client.log("test")
+	"""
+	def __init__(self, server:str, port:int, proto:str='udp', forceipv4:bool=False, clientname:str=None) -> None:
 		SyslogClient.__init__(self,
 			server=server,
 			port=port,
@@ -266,7 +282,7 @@ class SyslogClientRFC3164(SyslogClient):
 			maxMessageLength=1024,
 		)
 
-	def log(self, message, facility=None, severity=None, timestamp=None, hostname=None, program="SyslogClient", pid=None):
+	def log(self, message:str, facility:int=None, severity:int=None, timestamp:datetime=None, hostname:str=None, program:str="SyslogClient", pid:int=None) -> None:
 		if facility == None:
 			facility = FAC_USER
 
