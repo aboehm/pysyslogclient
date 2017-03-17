@@ -3,7 +3,7 @@
 from setuptools import setup, find_packages
 import pysyslogclient, sys
 
-long_description=open("README.md", "r").read(4096)
+long_description=open("README", "r").read(4096)
 
 setup(
 	name="pysyslogclient",
